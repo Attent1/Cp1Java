@@ -3,13 +3,16 @@ package br.com.fiap.Checkpoint1.controller;
 import static org.springframework.http.HttpStatus.CREATED;
 import static org.springframework.http.HttpStatus.NOT_FOUND; 
 import static org.springframework.http.HttpStatus.OK;
+import static org.springframework.http.HttpStatus.NO_CONTENT;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -37,49 +40,38 @@ public class ContaController {
         return repository.findAll();
     }
 
-    @PutMapping("{id}")
-    @ResponseStatus(OK)
-    public Conta encerrarConta(@PathVariable Long id, @RequestBody Conta conta){
-        verificarSeExisteConta(id);                  
-        conta.setId(id); 
+    @DeleteMapping("{id}")
+    @ResponseStatus(NO_CONTENT)
+    public void encerrarConta(@PathVariable Long id){
+        Conta conta = verificarSeExisteConta(id);                  
         conta.setAtiva(false);
-        return repository.save(conta);
+        repository.save(conta);
     }
 
     @PutMapping("/deposito/{id}/{valor}")
     @ResponseStatus(OK)
-    public Conta deposito(@PathVariable Long id, @PathVariable Double valor , @RequestBody Conta conta){
-        Double valorAtual;
-        verificarSeExisteConta(id); 
-        if (valor > 0){
-            valorAtual = conta.getSaldoInicial();
-            valorAtual += valor;            
-            conta.setSaldoInicial(valorAtual);
+    public Conta deposito(@PathVariable Long id, @PathVariable BigDecimal valor) throws Exception{
+
+        Conta conta = verificarSeExisteConta(id);
+        if (!Ativa(conta)) {
+            throw new Exception("Conta inativa não pode fazer depósito");
+        }
+        if (valor.compareTo(new BigDecimal(0)) > 0){
+            conta.setSaldoInicial(conta.getSaldoInicial().add(valor));
         }                 
-        conta.setId(id); 
-        conta.setAtiva(false);
+
         return repository.save(conta);
     }
 
-    @PutMapping("/deposito/pix/{idOrig}/{idDest}/{valor}")
+    @PutMapping("/pix/{idOrig}/{idDest}/{valor}")
     @ResponseStatus(OK)
-    public List<Conta> PIX(@PathVariable Long idOrig, @PathVariable Long idDest,  @PathVariable Double valor){
-        Double valorAtual;
-        verificarSeExisteConta(idOrig); 
-        verificarSeExisteConta(idDest);
+    public List<Conta> PIX(@PathVariable Long idOrig, @PathVariable Long idDest,  @PathVariable BigDecimal valor) throws Exception{
+        Conta contaOrig = verificarSeExisteConta(idOrig);                                    
+        Conta contaDest = verificarSeExisteConta(idDest);
 
-        var contaOrig = repository.getById(idOrig);            
+        saque(idOrig, valor);           
+        deposito(idDest, valor);
 
-        var contaDest = repository.getById(idDest);
-                    
-        if (valor > 0){
-            valorAtual = contaOrig.getSaldoInicial();
-            valorAtual -= valor;            
-            contaOrig.setSaldoInicial(valorAtual);
-        }                 
-        contaOrig.setId(idOrig);    
-
-        deposito(idDest, valor, contaDest);
         List<Conta> lista = new ArrayList<>(); 
     
         lista.add(contaOrig);
@@ -90,21 +82,25 @@ public class ContaController {
 
     @PutMapping("/saque/{id}/{valor}")
     @ResponseStatus(OK)
-    public Conta saque(@PathVariable Long id, @PathVariable Double valor , @RequestBody Conta conta){
-        Double valorAtual;
-        verificarSeExisteConta(id); 
-        if (valor > 0){
-            valorAtual = conta.getSaldoInicial();
-            valorAtual -= valor;            
-            conta.setSaldoInicial(valorAtual);
-        }                 
-        conta.setId(id); 
-        conta.setAtiva(false);
+    public Conta saque(@PathVariable Long id, @PathVariable BigDecimal valor) throws Exception{
+
+        Conta conta = verificarSeExisteConta(id);
+        if (!Ativa(conta)) {
+            throw new Exception("Conta inativa não pode fazer saque");
+        }
+        if (conta.getSaldoInicial().compareTo(valor) > 0){
+            conta.setSaldoInicial(conta.getSaldoInicial().subtract(valor));
+        }                  
+        
         return repository.save(conta);
     }
     
-    private void verificarSeExisteConta(Long id) {
-        repository.findById(id)
+    private boolean Ativa(Conta conta){
+        return conta.getAtiva();
+    }
+
+    private Conta verificarSeExisteConta(Long id) {
+        return repository.findById(id)
                   .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Conta não encontrada"));
     }
 
@@ -124,17 +120,10 @@ public class ContaController {
 
     @GetMapping(value = "/cpf/{cpf}")
     public ResponseEntity<Conta> buscar(@PathVariable String cpf) {
-        Conta obj = findCPF(cpf);
-        if (obj !=null) {
-            
-            return ResponseEntity.ok().body(obj);
-        }
-        return ResponseEntity.notFound().build();
+
+        return repository.findContaByCpf(cpf)
+                  .map(ResponseEntity::ok)
+                  .orElse(ResponseEntity.notFound().build());                        
     }
-
-    public Conta findCPF(String cpf) {
-        Optional<Conta> obj = repository.findByCpf(cpf); 
-    return obj.orElseThrow();
-}
-
+    
 }

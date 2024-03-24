@@ -8,5 +8,5 @@ import br.com.fiap.Checkpoint1.model.Conta;
 
 public interface ContaRepository extends JpaRepository<Conta, Long>{
     
-        Optional<Conta> findByCpf(String cpf);
+        Optional<Conta> findContaByCpf(String cpf);
 }

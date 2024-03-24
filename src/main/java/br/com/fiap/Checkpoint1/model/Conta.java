@@ -2,9 +2,8 @@ package br.com.fiap.Checkpoint1.model;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.Date;
 
-import org.hibernate.type.descriptor.java.DateJavaType;
+import org.hibernate.validator.constraints.br.CPF;
 
 import br.com.fiap.Checkpoint1.validation.Tipo;
 import jakarta.persistence.Column;
@@ -25,6 +24,7 @@ public class Conta {
 
     @Id @GeneratedValue(strategy = GenerationType.AUTO)    
     private Long id;
+    
     @Column(name = "numeroConta", unique=true)
     private Long numeroConta;    
         
@@ -32,13 +32,15 @@ public class Conta {
     private String agencia;
     @NotBlank
     private String nome;
-    @Size(min=11)
-    
+     
+    @CPF(message = "CPF inválido")
+    @Column(name = "cpf", unique=true)
     private String cpf; 
+
     @PastOrPresent
     private LocalDate dtAbertura;
     @Min(0)
-    private Double saldoInicial;
+    private BigDecimal saldoInicial;
     private Boolean ativa;    
     @NotBlank(message = "{conta.tipo.notblank}")
     @Tipo     
