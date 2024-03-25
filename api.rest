@@ -1,0 +1,22 @@
+POST http://localhost:8080/conta
+Content-Type: application/json
+
+{
+
+	"numero": 12345,
+	"agencia": "0789",
+	"nome": "Jorge",
+	"cpf": "029.170.490-57",
+	"dtAbertura": "2024-03-25",
+	"saldo": 0,
+	"tipo": "CORRENTE"
+
+}
+###
+GET http://localhost:8080/conta?/cpf/cpf=788.326.340-40
+
+###
+ GET http://localhost:8080/conta/nome?nome=Rafael
+
+###
+GET http://localhost:8080/conta

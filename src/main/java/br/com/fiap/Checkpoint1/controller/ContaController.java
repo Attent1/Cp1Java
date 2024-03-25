@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
@@ -32,8 +33,12 @@ import jakarta.validation.Valid;
 
 public class ContaController {
     
-    @Autowired
+    // @Autowired
     ContaRepository repository;
+
+    public ContaController(ContaRepository repository){
+        this.repository = repository;
+    }
     
     @GetMapping 
     public List<Conta> listar() {
@@ -119,9 +124,17 @@ public class ContaController {
     }
 
     @GetMapping(value = "/cpf/{cpf}")
-    public ResponseEntity<Conta> buscar(@PathVariable String cpf) {
+    public ResponseEntity<Conta> buscar(@RequestParam String cpf) {
 
         return repository.findContaByCpf(cpf)
+                  .map(ResponseEntity::ok)
+                  .orElse(ResponseEntity.notFound().build());                        
+    }
+
+    @GetMapping(value = "/buscar/nome/{nome}")
+    public ResponseEntity<Conta> buscarNome(@RequestParam(required = true) String nome) {
+
+        return repository.findByNome(nome)
                   .map(ResponseEntity::ok)
                   .orElse(ResponseEntity.notFound().build());                        
     }

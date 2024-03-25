@@ -14,6 +14,7 @@ import jakarta.persistence.Id;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.PastOrPresent;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
@@ -25,25 +26,29 @@ public class Conta {
     @Id @GeneratedValue(strategy = GenerationType.AUTO)    
     private Long id;
     
-    @Column(name = "numeroConta", unique=true)
+    @Column(name = "numeroConta", unique=true, length = 12)
     private Long numeroConta;    
         
     @Size(min=4)
     private String agencia;
-    @NotBlank
+    @NotBlank(message = "Nome do titular é obrigatório")
     private String nome;
      
     @CPF(message = "CPF inválido")
-    @Column(name = "cpf", unique=true)
+    @Column(unique=true)
     private String cpf; 
 
-    @PastOrPresent
+    @PastOrPresent(message = "Data de abertura não pode ser no futuro")
     private LocalDate dtAbertura;
-    @Min(0)
+
+    @Min(0) @Column(name = "saldo")
     private BigDecimal saldoInicial;
+    
     private Boolean ativa;    
     @NotBlank(message = "{conta.tipo.notblank}")
     @Tipo     
+    @Pattern(regexp = "^(CORRENTE|POUPANCA|SALARIO)$", 
+             message = "Tipo deve ser CORRENTE, POUPANCA ou SALARIO")
     private String tipo;  
     
 }
